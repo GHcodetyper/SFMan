@@ -13,7 +13,7 @@ namespace SFMan
 	class Program
 	{
 		static HttpClient _httpclient = new HttpClient();
-		static string _token = "00DEm000000iVkr!AQEAQM2biydviBznJEUAOmwtlSBNnvLfShcN2xZL72FZ4XV4_UeLhvk04PFuV6V09SxlAfMGPdrNyqRJikrrG4jGFwc8vFdU";
+		static string _token = "00DEm000000iVkr!AQEAQC8Uh8Re1FzIKwMNTHOq._NQR4fPSvbzx8HadwOC2tYQG7lgmje8HlXrklWo7JQfN2GW0Jvsj_LHlySqxdOX_OpNAvnL";
 
 		static string hostUrl = "https://hostway2--datadev.sandbox.my.salesforce.com/services/data/v59.0/";
 		static string queryService = "/query/?q=";
@@ -25,7 +25,7 @@ namespace SFMan
 			//Console.WriteLine("Hello World!");
 			//MainAsync().GetAwaiter().GetResult();
 			//SomeGetTest();
-			//GetContactRelationsByAccount();
+			GetContactRelationsByAccount("acct2667385");
 			//GetAccountAndContactsByExtId("acct2667385");
 			//var json = ConvertCsvFileToJsonObject(@"c:\temp\SF\Contact.csv");
 
@@ -74,6 +74,22 @@ namespace SFMan
 
 			string phone = csvAccounts.GetAccountProperty("acct8567906", "Phone");
 
+			var csvACRelations = new CSVACRelations(@"c:\temp\SF\AccountContactRelation.csv");
+			foreach (var acr in csvACRelations.csvHelper.GetCSVEntities())
+			{
+				Console.WriteLine(acr.GetEntityProperty("Contact--customExtIdField__c"));
+			}
+
+			var acrel = csvACRelations.GetACRsByAccountId("test5781640");
+			var acrAr = csvACRelations.GetACRsByAccountId("test8849210");
+			acrAr = csvACRelations.GetACRsByEmail("ahfjk@fdkjfl.com");
+
+			foreach (var acr in acrAr)
+			{
+				//Console.WriteLine(csvACRelations.GetACRProperty(acr, "Account--customExtIdField__c"));
+				Console.WriteLine(acr.GetEntityProperty("Account--customExtIdField__c"));
+			}
+
 
 			var a = 5;
 		}
@@ -108,9 +124,9 @@ namespace SFMan
 			var a = 5;
 		}
 
-		static void GetContactRelationsByAccount()
+		static void GetContactRelationsByAccount(string extAccountId)
 		{
-			string query = "select fields(all) from AccountContactRelation where AccountId = '001Em000007fsN0IAI' limit 200";
+			string query = $"select id, name, customExtIdField__c, (select id, name, customExtIdField__c from Contacts) from account where customExtIdField__c = '{extAccountId}'";
 			//HttpContent content = new StringContent(jobconfig, Encoding.UTF8, "application/json");
 			HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, hostUrl + queryService + query);
 
@@ -122,15 +138,21 @@ namespace SFMan
 			HttpResponseMessage message = _httpclient.SendAsync(request).Result;
 			string response = message.Content.ReadAsStringAsync().Result;
 
-			dynamic re = JObject.Parse(response);
-			Console.WriteLine(re.totalSize);
+			JObject re = JObject.Parse(response);
 
-			var recs = re.records;
+			var Name = re.SelectToken($"$.records[0].Name");
 
-			foreach (var rec in recs)
-			{
-				Console.WriteLine(rec.Id);
-			}
+			var contacts = re.SelectToken($"$.records[0].Contacts.records");
+
+
+			//Console.WriteLine(re.totalSize);
+
+			//var recs = re.records;
+
+			//foreach (var rec in recs)
+			//{
+			//	Console.WriteLine(rec.Id);
+			//}
 
 			var a = 5;
 		}

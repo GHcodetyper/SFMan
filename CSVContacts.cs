@@ -17,7 +17,7 @@ namespace SFMan
 		}
 		public JToken GetContactByAccountId(string accountId)
 		{
-			return csvHelper.GetCSVEntities().SelectToken($"$.[?(@.Account--customExtIdField__c == '{accountId}')]");
+			return csvHelper.GetCSVEntities().SelectToken($"$.[?(@.Account--customExtIdField__c == '{accountId}')]").First();
 		}
 		public string GetContactProperty(JToken contact, string propertyName)
 		{
