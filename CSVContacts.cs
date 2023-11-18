@@ -15,9 +15,13 @@ namespace SFMan
 			csvHelper = new CSVHelper(fileName);
 			csvHelper.Populate();
 		}
-		public JToken GetContactByAccountId(string accountId)
+		public JToken GetContactById(int id)
 		{
-			return csvHelper.GetCSVEntities().SelectTokens($"$.[?(@.Account--customExtIdField__c == '{accountId}')]").First();
+			return csvHelper.GetCSVEntities().SelectToken($"$.[?(@.customExtIdField__c == '{id}')]");
+		}
+		public JToken[] GetContactsByAccountId(string accountId)
+		{
+			return csvHelper.GetCSVEntities().SelectTokens($"$.[?(@.Account--customExtIdField__c == '{accountId}')]").ToArray();
 		}
 		public string GetContactProperty(JToken contact, string propertyName)
 		{
@@ -25,9 +29,9 @@ namespace SFMan
 			return  value != null ? value : "";
 		}
 
-		public string GetContactProperty(string accountId, string propertyName)
+		public string GetContactProperty(int id, string propertyName)
 		{
-			JToken jt = GetContactByAccountId(accountId);
+			JToken jt = GetContactById(id);
 			return GetContactProperty(jt, propertyName);
 		}
 

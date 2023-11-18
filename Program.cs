@@ -42,63 +42,65 @@ namespace SFMan
 			//}
 
 			var csvContacts = new CSVContacts(@"c:\temp\SF\Contact 1.csv");
-			foreach (var ac in csvContacts.csvHelper.GetCSVEntities())
-			{
-				Console.WriteLine(ac.GetEntityProperty("MailingStreet"));
-			}
-
-			var con = csvContacts.GetContactByAccountId("acct8567906");
-			//foreach (JProperty r in con)
+			//foreach (var ac in csvContacts.csvHelper.GetCSVEntities())
 			//{
-			//	Console.WriteLine(r.Name);
-			//	Console.WriteLine(r.Value);
+			//	Console.WriteLine(ac.GetEntityProperty("MailingStreet"));
 			//}
 
-			//string email = csvContacts.GetContactProperty(con, "Email");
-			string email = csvContacts.GetContactProperty("acct8567906", "Email");
+			dynamic cons = csvContacts.GetContactsByAccountId("acct8567906");
+			string e0 = cons[0]?.Email;
+
+			dynamic con = csvContacts.GetContactById(103191671);
+			string e1 = con.Email;
+			string e2 = csvContacts.GetContactProperty(103191671, "Email");
+			
+			string e3 = csvContacts.GetContactProperty(con, "Email");
 
 
 
-
-			var csvAccounts = new CSVAccounts(@"c:\temp\SF\Account 1.csv");
-			foreach (var ac in csvAccounts.csvHelper.GetCSVEntities())
-			{
-				Console.WriteLine(ac.GetEntityProperty("Name"));
-			}
+			 var csvAccounts = new CSVAccounts(@"c:\temp\SF\Account 1.csv");
+			//foreach (var ac in csvAccounts.csvHelper.GetCSVEntities())
+			//{
+			//	Console.WriteLine(ac.GetEntityProperty("Name"));
+			//}
 
 			var acc = csvAccounts.GetAccountById("acct8567906");
-			//foreach (JProperty r in acc)
-			//{
-			//	Console.WriteLine(r.Name);
-			//	Console.WriteLine(r.Value);
-			//}
 
 			string phone = csvAccounts.GetAccountProperty("acct8567906", "Phone");
 
 			var csvACRelations = new CSVACRelations(@"c:\temp\SF\AccountContactRelation 1.csv");
-			foreach (var acr in csvACRelations.csvHelper.GetCSVEntities())
-			{
-				Console.WriteLine(acr.GetEntityProperty("Contact--customExtIdField__c"));
-			}
+			//foreach (var acr in csvACRelations.csvHelper.GetCSVEntities())
+			//{
+			//	Console.WriteLine(acr.GetEntityProperty("Contact--customExtIdField__c"));
+			//}
 
-			var acrAr = csvACRelations.GetACRsByAccountId("sjdfkl2502958");
-			//acrAr = csvACRelations.GetACRsByEmail("ahfjk@fdkjfl.com");
+			var acrAr = csvACRelations.GetACRsByAccountId("acct8567906");
 
 			foreach (var acr in acrAr)
 			{
 				//Console.WriteLine(csvACRelations.GetACRProperty(acr, "Account--customExtIdField__c"));
 				//Console.WriteLine(acr.GetEntityProperty("Account--customExtIdField__c"));
-				
+
+
 				dynamic acrStruct = new System.Dynamic.ExpandoObject();
 				acrStruct.AccountId = acr.GetEntityProperty("Account--customExtIdField__c");
 				acrStruct.ContactId = int.Parse(acr.GetEntityProperty("Contact--customExtIdField__c"));
 				acrStruct.RelationshipStrength = acr.GetEntityProperty("Relationship_Strength__c");
+				Console.WriteLine($"CSV: {{{acrStruct.AccountId}, {acrStruct.ContactId}, {acrStruct.RelationshipStrength}}}");
 
-				Console.WriteLine(acrStruct);
+				dynamic csvCon = csvContacts.GetContactById(acrStruct.ContactId);
+				
+
+				dynamic sfAccStruct = GetAccountAndContactsByExtId(acrStruct.AccountId);
+				Console.WriteLine($"SF Account: {{{sfAccStruct.Account.customExtIdField__c}, {sfAccStruct.Account.Id}, {sfAccStruct.Account.Name}, {sfAccStruct.Account.Type}}}");
+				foreach (var sfContact in sfAccStruct.Contacts)
+				{
+					Console.WriteLine($"SF Contact: {{{(int)sfContact.customExtIdField__c}, {sfContact.Name}, {sfContact.Email}}}");
+				}
 			}
 
 
-			var accStruct = GetAccountAndContactsByExtId("acct2667385");
+			var accStruct = GetAccountAndContactsByExtId("acct2Z667385");
 			foreach (var contact in accStruct.Contacts)
 				Console.WriteLine((int)contact.customExtIdField__c);
 
@@ -178,10 +180,10 @@ namespace SFMan
 		static dynamic GetAccountAndContactsByExtId(string extId)
 		{
 			string query = String.Format(
-				"select Id, Name, CustomExtIdField__c, " +
-				"(select Id, Name, Email, CustomExtIdField__c, Department, Phone, MobilePhone, Secondary_Email__c " +
-				"from Contacts) " +
-				"from account where CustomExtIdField__c = '{0}'",
+				" select Id, Name, CustomExtIdField__c, Type, Phone " +
+				" , (select Id, Name, Email, CustomExtIdField__c, Department, Phone, MobilePhone, Secondary_Email__c " +
+				" from Contacts) " +
+				" from account where CustomExtIdField__c = '{0}'",
 			extId);
 			
 			HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, hostUrl + queryService + query);
@@ -227,7 +229,7 @@ namespace SFMan
 
 			return message.IsSuccessStatusCode;
 		}
-		static bool GetContact(string Id)
+		static dynamic GetContact(string Id)
 		{
 			string sObjectStr = String.Format(sObjectService, "Contact", Id);
 			HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, hostUrl + sObjectStr);
@@ -240,7 +242,7 @@ namespace SFMan
 
 			dynamic respObj = JObject.Parse(response);
 
-			return message.IsSuccessStatusCode;
+			return respObj;
 		}
 	}
 

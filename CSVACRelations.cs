@@ -19,9 +19,13 @@ namespace SFMan
 		{
 			return csvHelper.GetCSVEntities().SelectTokens($"$.[?(@.Account--customExtIdField__c == '{accountId}')]").ToArray();
 		}
-		public JToken[] GetACRsByEmail(string accountId)
+		//public JToken[] GetACRsByEmail(string accountId)
+		//{
+		//	return csvHelper.GetCSVEntities().SelectTokens($"$.[?(@.Contact--customExtIdField__c == '{accountId}')]").ToArray();
+		//}
+		public JToken[] GetACRsById(int id)
 		{
-			return csvHelper.GetCSVEntities().SelectTokens($"$.[?(@.Contact--customExtIdField__c == '{accountId}')]").ToArray();
+			return csvHelper.GetCSVEntities().SelectTokens($"$.[?(@.Contact.customExtIdField__c == '{id}')]").ToArray();
 		}
 		public string GetACRProperty(JToken acRel, string propertyName)
 		{
