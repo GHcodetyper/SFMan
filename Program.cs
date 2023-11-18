@@ -13,10 +13,11 @@ namespace SFMan
 	class Program
 	{
 		static HttpClient _httpclient = new HttpClient();
-		static string _token = "00DEm000000iVkr!AQEAQEtMHC9JEmNZVXAKsAxPKW51lnFdaIsgzUCc2RbWgJqteNKYCXMvQNbqgC32OnfTN76nicHv8rw6pGrybas7uKjgpUD_";
+		static string _token = "00DEm000000iVkr!AQEAQDxQxWAFUQlAWWLGIN4.6zjOWfjhb1Ow4mLbFgHLXfpEWY3qc_vMZm.SkHid.Go1sxEBLX2cJ5rvbCgcsuzVKWXEsM8K";
 
 		static string hostUrl = "https://hostway2--datadev.sandbox.my.salesforce.com/services/data/v59.0/";
 		static string queryService = "/query/?q=";
+		static string sObjectService = @"sobjects/{0}/{1}";
 
 		//static string _url = "https://hostway2--datadev.sandbox.my.salesforce.com/services/data/v59.0/query/?q=SELECT FIELDS(All) FROM ACCOUNT ORDER BY Name LIMIT 50";
 		static string _url = "https://hostway2--datadev.sandbox.my.salesforce.com/services/data/v59.0/sobjects/Contact/0033J00000Xa527QAB";
@@ -40,7 +41,7 @@ namespace SFMan
 			//	Console.WriteLine(item);
 			//}
 
-			var csvContacts = new CSVContacts(@"c:\temp\SF\Contact.csv");
+			var csvContacts = new CSVContacts(@"c:\temp\SF\Contact 1.csv");
 			foreach (var ac in csvContacts.csvHelper.GetCSVEntities())
 			{
 				Console.WriteLine(ac.GetEntityProperty("MailingStreet"));
@@ -59,7 +60,7 @@ namespace SFMan
 
 
 
-			var csvAccounts = new CSVAccounts(@"c:\temp\SF\Account.csv");
+			var csvAccounts = new CSVAccounts(@"c:\temp\SF\Account 1.csv");
 			foreach (var ac in csvAccounts.csvHelper.GetCSVEntities())
 			{
 				Console.WriteLine(ac.GetEntityProperty("Name"));
@@ -74,28 +75,37 @@ namespace SFMan
 
 			string phone = csvAccounts.GetAccountProperty("acct8567906", "Phone");
 
-			var csvACRelations = new CSVACRelations(@"c:\temp\SF\AccountContactRelation.csv");
+			var csvACRelations = new CSVACRelations(@"c:\temp\SF\AccountContactRelation 1.csv");
 			foreach (var acr in csvACRelations.csvHelper.GetCSVEntities())
 			{
 				Console.WriteLine(acr.GetEntityProperty("Contact--customExtIdField__c"));
 			}
 
-			var acrel = csvACRelations.GetACRsByAccountId("test5781640");
-			var acrAr = csvACRelations.GetACRsByAccountId("test8849210");
-			acrAr = csvACRelations.GetACRsByEmail("ahfjk@fdkjfl.com");
+			var acrAr = csvACRelations.GetACRsByAccountId("sjdfkl2502958");
+			//acrAr = csvACRelations.GetACRsByEmail("ahfjk@fdkjfl.com");
 
 			foreach (var acr in acrAr)
 			{
 				//Console.WriteLine(csvACRelations.GetACRProperty(acr, "Account--customExtIdField__c"));
-				Console.WriteLine(acr.GetEntityProperty("Account--customExtIdField__c"));
+				//Console.WriteLine(acr.GetEntityProperty("Account--customExtIdField__c"));
+				
+				dynamic acrStruct = new System.Dynamic.ExpandoObject();
+				acrStruct.AccountId = acr.GetEntityProperty("Account--customExtIdField__c");
+				acrStruct.ContactId = int.Parse(acr.GetEntityProperty("Contact--customExtIdField__c"));
+				acrStruct.RelationshipStrength = acr.GetEntityProperty("Relationship_Strength__c");
+
+				Console.WriteLine(acrStruct);
 			}
 
 
-			var res = GetAccountAndContactsByExtId("acct2667385");
-			foreach (var contact in res.Contacts.records)
-			{
+			var accStruct = GetAccountAndContactsByExtId("acct2667385");
+			foreach (var contact in accStruct.Contacts)
 				Console.WriteLine((int)contact.customExtIdField__c);
-			}
+
+			Console.WriteLine(accStruct.Account.Id);
+			Console.WriteLine(accStruct.Account.customExtIdField__c);
+
+			var d = GetContact("003Em0000075h57IAA");
 
 			var a = 5;
 		}
@@ -167,7 +177,13 @@ namespace SFMan
 
 		static dynamic GetAccountAndContactsByExtId(string extId)
 		{
-			string query = String.Format("select id, name, customExtIdField__c, (select Id, Name, Email, CustomExtIdField__c from Contacts) from account where CustomExtIdField__c = '{0}'", extId);
+			string query = String.Format(
+				"select Id, Name, CustomExtIdField__c, " +
+				"(select Id, Name, Email, CustomExtIdField__c, Department, Phone, MobilePhone, Secondary_Email__c " +
+				"from Contacts) " +
+				"from account where CustomExtIdField__c = '{0}'",
+			extId);
+			
 			HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, hostUrl + queryService + query);
 
 			request.Headers.Add("Authorization", "Bearer " + _token);
@@ -176,12 +192,16 @@ namespace SFMan
 			HttpResponseMessage message = _httpclient.SendAsync(request).Result;
 			string response = message.Content.ReadAsStringAsync().Result;
 
-			dynamic re = JObject.Parse(response);
-			Console.WriteLine(re.totalSize);
+			dynamic respObj = JObject.Parse(response);
+			//Console.WriteLine(re.totalSize);
 
-			var recs = re.records;
+			var recs = respObj.records;
 
-			return recs[0];
+			dynamic result = new System.Dynamic.ExpandoObject();
+			result.Contacts = respObj.records[0].Contacts.records;
+			result.Account = respObj.records[0];
+
+			return result;
 
 			//foreach (var rec in recs)
 			//{
@@ -194,6 +214,34 @@ namespace SFMan
 			//var a = 5;
 		}
 
+		static bool DeleteContact(string Id)
+		{
+			string sObjectStr = String.Format(sObjectService, "Contact", Id);
+			HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Delete, hostUrl + sObjectStr);
+
+			request.Headers.Add("Authorization", "Bearer " + _token);
+			request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+			HttpResponseMessage message = _httpclient.SendAsync(request).Result;
+			//string response = message.Content.ReadAsStringAsync().Result;
+
+			return message.IsSuccessStatusCode;
+		}
+		static bool GetContact(string Id)
+		{
+			string sObjectStr = String.Format(sObjectService, "Contact", Id);
+			HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, hostUrl + sObjectStr);
+
+			request.Headers.Add("Authorization", "Bearer " + _token);
+			request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+			HttpResponseMessage message = _httpclient.SendAsync(request).Result;
+			string response = message.Content.ReadAsStringAsync().Result;
+
+			dynamic respObj = JObject.Parse(response);
+
+			return message.IsSuccessStatusCode;
+		}
 	}
 
 
