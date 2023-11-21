@@ -13,7 +13,7 @@ namespace SFMan
 	class Program
 	{
 		static HttpClient _httpclient = new HttpClient();
-		static string _token = "00DEm000000iVkr!AQEAQDxQxWAFUQlAWWLGIN4.6zjOWfjhb1Ow4mLbFgHLXfpEWY3qc_vMZm.SkHid.Go1sxEBLX2cJ5rvbCgcsuzVKWXEsM8K";
+		static string _token = "00DEm000000iVkr!AQEAQAKC8laXkUCXSxfu.2KK_wxW9Owhxfdm44b3K_07Ph.rmCRea3Hyf48oryRxkDa5f9xI1KqZ1yW5Kv2ty35FtNo_08TN";
 
 		static string hostUrl = "https://hostway2--datadev.sandbox.my.salesforce.com/services/data/v59.0/";
 		static string queryService = "/query/?q=";
@@ -68,46 +68,112 @@ namespace SFMan
 
 			string phone = csvAccounts.GetAccountProperty("acct8567906", "Phone");
 
-			var csvACRelations = new CSVACRelations(@"c:\temp\SF\AccountContactRelation 1.csv");
-			//foreach (var acr in csvACRelations.csvHelper.GetCSVEntities())
-			//{
-			//	Console.WriteLine(acr.GetEntityProperty("Contact--customExtIdField__c"));
-			//}
+			//-------------------------------------------------------------
 
-			var acrAr = csvACRelations.GetACRsByAccountId("acct8567906");
+			var csvACRelations = new CSVACRelations(@"c:\temp\SF\AccountContactRelation 2.csv");
 
-			foreach (var acr in acrAr)
+			foreach (var acRel in csvACRelations.csvHelper.GetCSVEntities())
 			{
-				//Console.WriteLine(csvACRelations.GetACRProperty(acr, "Account--customExtIdField__c"));
-				//Console.WriteLine(acr.GetEntityProperty("Account--customExtIdField__c"));
+				string csvAccountId = acRel.GetEntityProperty("Account--customExtIdField__c");
+				int csvContactId = int.Parse(acRel.GetEntityProperty("Contact--customExtIdField__c"));
+				string RelationshipStrength = acRel.GetEntityProperty("Relationship_Strength__c");
 
 
-				dynamic acrStruct = new System.Dynamic.ExpandoObject();
-				acrStruct.AccountId = acr.GetEntityProperty("Account--customExtIdField__c");
-				acrStruct.ContactId = int.Parse(acr.GetEntityProperty("Contact--customExtIdField__c"));
-				acrStruct.RelationshipStrength = acr.GetEntityProperty("Relationship_Strength__c");
-				Console.WriteLine($"CSV: {{{acrStruct.AccountId}, {acrStruct.ContactId}, {acrStruct.RelationshipStrength}}}");
+				dynamic csvContact = csvContacts.GetContactById(csvContactId);
+				Console.WriteLine(csvContact);
+				dynamic csvAccount = csvAccounts.GetAccountById(csvAccountId);
+				Console.WriteLine(csvAccount);
 
-				dynamic csvCon = csvContacts.GetContactById(acrStruct.ContactId);
-				
+				if (csvAccountId != "acct8567906")
+					continue;
 
-				dynamic sfAccStruct = GetAccountAndContactsByExtId(acrStruct.AccountId);
+				dynamic sfAccStruct = GetAccountAndContactsByExtId(csvAccountId);
 				Console.WriteLine($"SF Account: {{{sfAccStruct.Account.customExtIdField__c}, {sfAccStruct.Account.Id}, {sfAccStruct.Account.Name}, {sfAccStruct.Account.Type}}}");
-				foreach (var sfContact in sfAccStruct.Contacts)
+
+				if (sfAccStruct == null)
 				{
-					Console.WriteLine($"SF Contact: {{{(int)sfContact.customExtIdField__c}, {sfContact.Name}, {sfContact.Email}}}");
+					// Handle the case when on CSV side there is the Account but on SF side there is not any
+					string accPhone = csvAccounts.GetAccountProperty(csvAccountId, "Phone");
+					//TODO: insert the account using the SObject API call
+					continue;
+				}
+
+				var csvACRArray = csvACRelations.GetACRsByAccountId(csvAccountId);
+				List<int> csvContactIds = new List<int>();
+				foreach (var acr in csvACRArray)
+					csvContactIds.Add(int.Parse(acr.GetEntityProperty("Contact--customExtIdField__c")));
+
+				dynamic sfContactArray = sfAccStruct.Contacts;
+				List<int> sfContactIds = new List<int>();
+				foreach (var sfc in sfContactArray)
+				{
+					int sfContCustExtFieldId = (sfc.customExtIdField__c == null) ? -1 : (int)sfc.customExtIdField__c;
+					sfContactIds.Add(sfContCustExtFieldId);
+				}
+
+				IEnumerable<int> newCSVIds = csvContactIds.Except(sfContactIds);
+				foreach (var csvId in newCSVIds)
+				{
+					// Handle the case when the CSV account has a new contact
+					// add the contact on the SF side
+					Console.WriteLine(csvId);
+				}
+
+				IEnumerable<int> newSFIds = sfContactIds.Except(csvContactIds);
+				foreach (var csvId in newSFIds)
+				{
+					// Handle the case when the SF account has a new contact
+					// ?? delete the account on the SF side
+					Console.WriteLine(csvId);
+				}
+
+				IEnumerable<int> commonIds = sfContactIds.Intersect(csvContactIds);
+				foreach (var csvId in commonIds)
+				{
+					// Handle the case when the CSV account and the SF account have the same contact
+					// ?? update the account on the SF side
+					Console.WriteLine(csvId);
 				}
 			}
 
 
-			var accStruct = GetAccountAndContactsByExtId("acct2Z667385");
-			foreach (var contact in accStruct.Contacts)
-				Console.WriteLine((int)contact.customExtIdField__c);
 
-			Console.WriteLine(accStruct.Account.Id);
-			Console.WriteLine(accStruct.Account.customExtIdField__c);
 
-			var d = GetContact("003Em0000075h57IAA");
+
+
+
+			//var acrAr = csvACRelations.GetACRsByAccountId("acct8567906");
+
+			//foreach (var acr in acrAr)
+			//{
+			//	//Console.WriteLine(csvACRelations.GetACRProperty(acr, "Account--customExtIdField__c"));
+			//	//Console.WriteLine(acr.GetEntityProperty("Account--customExtIdField__c"));
+
+
+			//	dynamic acrStruct = new System.Dynamic.ExpandoObject();
+			//	acrStruct.AccountId = acr.GetEntityProperty("Account--customExtIdField__c");
+			//	acrStruct.ContactId = int.Parse(acr.GetEntityProperty("Contact--customExtIdField__c"));
+			//	acrStruct.RelationshipStrength = acr.GetEntityProperty("Relationship_Strength__c");
+			//	Console.WriteLine($"CSV: {{{acrStruct.AccountId}, {acrStruct.ContactId}, {acrStruct.RelationshipStrength}}}");
+
+			//	dynamic csvCon = csvContacts.GetContactById(acrStruct.ContactId);
+			//	Console.WriteLine(csvCon);
+			//	dynamic csvAccount = csvAccounts.GetAccountById(acrStruct.AccountId);
+			//	Console.WriteLine(csvAccount);
+
+
+
+			//}
+
+
+			//var accStruct = GetAccountAndContactsByExtId("acct2Z667385");
+			//foreach (var contact in accStruct.Contacts)
+			//	Console.WriteLine((int)contact.customExtIdField__c);
+
+			//Console.WriteLine(accStruct.Account.Id);
+			//Console.WriteLine(accStruct.Account.customExtIdField__c);
+
+			//var d = GetContact("003Em0000075h57IAA");
 
 			var a = 5;
 		}
@@ -198,6 +264,8 @@ namespace SFMan
 			//Console.WriteLine(re.totalSize);
 
 			var recs = respObj.records;
+			if (recs.Count == 0)
+				return null;
 
 			dynamic result = new System.Dynamic.ExpandoObject();
 			result.Contacts = respObj.records[0].Contacts.records;
