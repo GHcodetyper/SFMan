@@ -99,13 +99,15 @@ namespace SFMan
 			//var a = 5;
 		}
 
-		public bool DeleteContact(string Id)
+		public bool DeleteContact(dynamic contact)
 		{
-			string sObjectStr = String.Format(_sObjectService, "Contact", Id);
+			string sObjectStr = String.Format(_sObjectService, "Contact", (string)contact.Id);
 			HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Delete, _hostUrl + sObjectStr);
 
 			request.Headers.Add("Authorization", "Bearer " + _apiToken);
 			request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+			request.Method = HttpMethod.Options;
 
 			HttpResponseMessage message = _httpclient.SendAsync(request).Result;
 			//string response = message.Content.ReadAsStringAsync().Result;
@@ -126,6 +128,20 @@ namespace SFMan
 			dynamic respObj = JObject.Parse(response);
 
 			return respObj;
+		}
+
+		public void UpdateContact(dynamic contact)
+		{
+			return;
+		}
+
+		public void UpdateAccount(dynamic account)
+		{
+			return;
+		}
+		public void CreateAccount(dynamic account)
+		{
+			return;
 		}
 	}
 }

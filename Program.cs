@@ -12,15 +12,8 @@ namespace SFMan
 {
 	class Program
 	{
-		static HttpClient _httpclient = new HttpClient();
-		static string _token = "00DEm000000iVkr!AQEAQFtUyEog.VWzKylprbdAqRCzGrXdd3eqiKen49NDfDdZDowlAGRUwTkMXdrPXEgzDNLiArxAN.qwX6d.hPg.GGIjg2ez";
-
+		static string _token = "00DEm000000iVkr!AQEAQKV2a56FHSJgSLfxosNrA42gJE.79lKHqPg2.wqVX.8bsb2SABVVlGtswIdk6WSLm2PdSoMg9YdnMmce9crIXsdV4Hw9";
 		static string hostUrl = "https://hostway2--datadev.sandbox.my.salesforce.com/services/data/v59.0/";
-		static string queryService = "/query/?q=";
-		static string sObjectService = @"sobjects/{0}/{1}";
-
-		//static string _url = "https://hostway2--datadev.sandbox.my.salesforce.com/services/data/v59.0/query/?q=SELECT FIELDS(All) FROM ACCOUNT ORDER BY Name LIMIT 50";
-		static string _url = "https://hostway2--datadev.sandbox.my.salesforce.com/services/data/v59.0/sobjects/Contact/0033J00000Xa527QAB";
 		static void Main(string[] args)
 		{
 			//Console.WriteLine("Hello World!");
@@ -77,69 +70,146 @@ namespace SFMan
 
 			var csvACRelations = new CSVACRelations(@"c:\temp\SF\AccountContactRelation 2.csv");
 
-			foreach (var acRel in csvACRelations.csvHelper.GetCSVEntities())
+			foreach (dynamic csvAccount in csvAccounts.csvHelper.GetCSVEntities())
 			{
-				string csvAccountId = acRel.GetEntityProperty("Account--customExtIdField__c");
-				int csvContactId = int.Parse(acRel.GetEntityProperty("Contact--customExtIdField__c"));
-				string RelationshipStrength = acRel.GetEntityProperty("Relationship_Strength__c");
+				//for the case when: foreach (var csvAccount in ....
+				//string csvAccountId = csvAccount.GetEntityProperty("customExtIdField__c");//"acct8567906";
+				string csvAccountId = csvAccount.customExtIdField__c;
 
-
-				dynamic csvContact = csvContacts.GetContactById(csvContactId);
-				Console.WriteLine(csvContact);
-				dynamic csvAccount = csvAccounts.GetAccountById(csvAccountId);
-				Console.WriteLine(csvAccount);
 
 				if (csvAccountId != "acct8567906")
 					continue;
 
 				dynamic sfAccStruct = sfa.GetAccountAndContactsByExtId(csvAccountId);
-				Console.WriteLine($"SF Account: {{{sfAccStruct.Account.customExtIdField__c}, {sfAccStruct.Account.Id}, {sfAccStruct.Account.Name}, {sfAccStruct.Account.Type}}}");
-
 				if (sfAccStruct == null)
 				{
 					// Handle the case when on CSV side there is the Account but on SF side there is not any
 					string accPhone = csvAccounts.GetAccountProperty(csvAccountId, "Phone");
 					//TODO: insert the account using the SObject API call
+					sfa.CreateAccount(sfAccStruct.Account);
 					continue;
 				}
 
-				var csvACRArray = csvACRelations.GetACRsByAccountId(csvAccountId);
-				List<int> csvContactIds = new List<int>();
-				foreach (var acr in csvACRArray)
-					csvContactIds.Add(int.Parse(acr.GetEntityProperty("Contact--customExtIdField__c")));
+				dynamic sfAccount = sfAccStruct.Account;
+				sfa.UpdateAccount(sfAccount);
+
+				Console.WriteLine($"SF Account: {{{sfAccount.customExtIdField__c}, {sfAccount.Id}, {sfAccount.Name}, {sfAccount.Type}}}");
 
 				dynamic sfContactArray = sfAccStruct.Contacts;
-				List<int> sfContactIds = new List<int>();
-				foreach (var sfc in sfContactArray)
+				Console.WriteLine(sfContactArray);
+
+				dynamic csvContactArray = csvContacts.GetContactsByAccountId(csvAccountId);
+
+
+				List<dynamic> sfContactsToDelete = new List<dynamic>();
+				List<dynamic> sfContactsToUpdate = new List<dynamic>();
+
+				foreach (dynamic sfContact in sfContactArray)
 				{
-					int sfContCustExtFieldId = (sfc.customExtIdField__c == null) ? -1 : (int)sfc.customExtIdField__c;
-					sfContactIds.Add(sfContCustExtFieldId);
+					if (sfContact.customExtIdField__c == null)
+					{
+						sfContact.SyncOperation = "del-id-null";
+						sfContactsToDelete.Add(sfContact);
+						continue;
+					}
+
+					foreach(dynamic csvContact in csvContactArray)
+					{
+						if ((int)sfContact.customExtIdField__c == (int)csvContact.customExtIdField__c)
+						{
+							sfContact.SyncOperation = "upd";
+							sfContactsToUpdate.Add(sfContact);
+						}
+					}
 				}
 
-				IEnumerable<int> newCSVIds = csvContactIds.Except(sfContactIds);
-				foreach (var csvId in newCSVIds)
+				foreach (dynamic sfContact in sfContactArray)
 				{
-					// Handle the case when the CSV account has a new contact
-					// add the contact on the SF side
-					Console.WriteLine(csvId);
-				}
+					if (sfContact.SyncOperation == null)
+						sfContact.SyncOperation = "del-id-not-found";
 
-				IEnumerable<int> newSFIds = sfContactIds.Except(csvContactIds);
-				foreach (var csvId in newSFIds)
-				{
-					// Handle the case when the SF account has a new contact
-					// ?? delete the account on the SF side
-					Console.WriteLine(csvId);
+					switch ((string)sfContact.SyncOperation)
+					{
+						case "del-id-null":
+						case "del-id-not-found":
+							sfa.DeleteContact(sfContact);
+							break;
+						case "upd":
+							break;
+						default:
+							break;
+					}
 				}
+			}
 
-				IEnumerable<int> commonIds = sfContactIds.Intersect(csvContactIds);
-				foreach (var csvId in commonIds)
-				{
-					// Handle the case when the CSV account and the SF account have the same contact
-					// ?? update the account on the SF side
-					Console.WriteLine(csvId);
-				}
-				}
+
+
+			//foreach (var acRel in csvACRelations.csvHelper.GetCSVEntities())
+			//{
+			//	string csvAccountId = acRel.GetEntityProperty("Account--customExtIdField__c");
+			//	int csvContactId = int.Parse(acRel.GetEntityProperty("Contact--customExtIdField__c"));
+			//	string RelationshipStrength = acRel.GetEntityProperty("Relationship_Strength__c");
+
+
+			//	dynamic csvContact = csvContacts.GetContactById(csvContactId);
+			//	Console.WriteLine(csvContact);
+			//	dynamic csvAccount = csvAccounts.GetAccountById(csvAccountId);
+			//	Console.WriteLine(csvAccount);
+
+			//	if (csvAccountId != "acct8567906")
+			//		continue;
+
+			//	dynamic sfAccStruct = sfa.GetAccountAndContactsByExtId(csvAccountId);
+			//	Console.WriteLine($"SF Account: {{{sfAccStruct.Account.customExtIdField__c}, {sfAccStruct.Account.Id}, {sfAccStruct.Account.Name}, {sfAccStruct.Account.Type}}}");
+
+			//	if (sfAccStruct == null)
+			//	{
+			//		// Handle the case when on CSV side there is the Account but on SF side there is not any
+			//		string accPhone = csvAccounts.GetAccountProperty(csvAccountId, "Phone");
+			//		//TODO: insert the account using the SObject API call
+			//		continue;
+			//	}
+
+
+
+			//	var csvACRArray = csvACRelations.GetACRsByAccountId(csvAccountId);
+			//	List<int> csvContactIds = new List<int>();
+			//	foreach (var acr in csvACRArray)
+			//		csvContactIds.Add(int.Parse(acr.GetEntityProperty("Contact--customExtIdField__c")));
+
+			//	dynamic sfContactArray = sfAccStruct.Contacts;
+
+			//	List<int> sfContactIds = new List<int>();
+			//	foreach (var sfc in sfContactArray)
+			//	{
+			//		int sfContCustExtFieldId = (sfc.customExtIdField__c == null) ? -1 : (int)sfc.customExtIdField__c;
+			//		sfContactIds.Add(sfContCustExtFieldId);
+			//	}
+
+			//	IEnumerable<int> newCSVIds = csvContactIds.Except(sfContactIds);
+			//	foreach (var csvId in newCSVIds)
+			//	{
+			//		// Handle the case when the CSV account has a new contact
+			//		// add the contact on the SF side
+			//		Console.WriteLine(csvId);
+			//	}
+
+			//	IEnumerable<int> newSFIds = sfContactIds.Except(csvContactIds);
+			//	foreach (var csvId in newSFIds)
+			//	{
+			//		// Handle the case when the SF account has a new contact
+			//		// ?? delete the account on the SF side
+			//		Console.WriteLine(csvId);
+			//	}
+
+			//	IEnumerable<int> commonIds = sfContactIds.Intersect(csvContactIds);
+			//	foreach (var csvId in commonIds)
+			//	{
+			//		// Handle the case when the CSV account and the SF account have the same contact
+			//		// ?? update the account on the SF side
+			//		Console.WriteLine(csvId);
+			//	}
+			//	}
 
 
 
