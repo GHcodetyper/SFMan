@@ -17,7 +17,7 @@ namespace SFMan
 		}
 		public JToken GetContactById(int id)
 		{
-			return csvHelper.GetCSVEntities().SelectToken($"$.[?(@.customExtIdField__c == '{id}')]");
+			return csvHelper.GetCSVEntities().SelectToken($"$.[?(@.customExtIdField__c == '{id}')]"); 
 		}
 		public JToken[] GetContactsByAccountId(string accountId)
 		{

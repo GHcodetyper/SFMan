@@ -13,7 +13,7 @@ namespace SFMan
 	class Program
 	{
 		static HttpClient _httpclient = new HttpClient();
-		static string _token = "00DEm000000iVkr!AQEAQAKC8laXkUCXSxfu.2KK_wxW9Owhxfdm44b3K_07Ph.rmCRea3Hyf48oryRxkDa5f9xI1KqZ1yW5Kv2ty35FtNo_08TN";
+		static string _token = "00DEm000000iVkr!AQEAQFtUyEog.VWzKylprbdAqRCzGrXdd3eqiKen49NDfDdZDowlAGRUwTkMXdrPXEgzDNLiArxAN.qwX6d.hPg.GGIjg2ez";
 
 		static string hostUrl = "https://hostway2--datadev.sandbox.my.salesforce.com/services/data/v59.0/";
 		static string queryService = "/query/?q=";
@@ -25,7 +25,6 @@ namespace SFMan
 		{
 			//Console.WriteLine("Hello World!");
 			//MainAsync().GetAwaiter().GetResult();
-			//SomeGetTest();
 			//GetContactRelationsByAccount("acct2667385");
 			//GetAccountAndContactsByExtId("acct2667385");
 			//var json = ConvertCsvFileToJsonObject(@"c:\temp\SF\Contact.csv");
@@ -65,8 +64,14 @@ namespace SFMan
 			//}
 
 			var acc = csvAccounts.GetAccountById("acct8567906");
-
 			string phone = csvAccounts.GetAccountProperty("acct8567906", "Phone");
+
+
+
+			SFAdapter sfa = new SFAdapter(hostUrl, _token);
+
+
+
 
 			//-------------------------------------------------------------
 
@@ -87,7 +92,7 @@ namespace SFMan
 				if (csvAccountId != "acct8567906")
 					continue;
 
-				dynamic sfAccStruct = GetAccountAndContactsByExtId(csvAccountId);
+				dynamic sfAccStruct = sfa.GetAccountAndContactsByExtId(csvAccountId);
 				Console.WriteLine($"SF Account: {{{sfAccStruct.Account.customExtIdField__c}, {sfAccStruct.Account.Id}, {sfAccStruct.Account.Name}, {sfAccStruct.Account.Type}}}");
 
 				if (sfAccStruct == null)
@@ -134,7 +139,7 @@ namespace SFMan
 					// ?? update the account on the SF side
 					Console.WriteLine(csvId);
 				}
-			}
+				}
 
 
 
@@ -173,7 +178,7 @@ namespace SFMan
 			//Console.WriteLine(accStruct.Account.Id);
 			//Console.WriteLine(accStruct.Account.customExtIdField__c);
 
-			//var d = GetContact("003Em0000075h57IAA");
+			var d = sfa.GetContact("003Em0000075h57IAA");
 
 			var a = 5;
 		}
@@ -192,21 +197,6 @@ namespace SFMan
 			Console.WriteLine(await response.Content.ReadAsStringAsync());
 		}
 
-		static void SomeGetTest()
-		{
-			//HttpContent content = new StringContent(jobconfig, Encoding.UTF8, "application/json");
-			HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, _url);
-
-			request.Headers.Add("Authorization", "Bearer " + _token);
-			request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-			//request.Content = content;
-
-			HttpResponseMessage message = _httpclient.SendAsync(request).Result;
-			string response = message.Content.ReadAsStringAsync().Result;
-
-			var a = 5;
-		}
 
 		static void GetContactRelationsByAccount(string extAccountId)
 		{
@@ -316,20 +306,5 @@ namespace SFMan
 
 
 
-	//class Account
-	//{
-	//	string name;
-	//	string accountNumber;
-	//	string phone;
-	//	Type,Brand__c,Status__c,OwnerId,RecordTypeId,customExtIdField__c
-	//}
-
 
 }
-
-
-
-// VBAccountTest - 0013J00000XH7HrQAL
-// sdjflk - 0013J00000XFaj7QAD
-
-// hank  - 003VF000000VxbjYAC

@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.VisualBasic.FileIO;
 
 namespace SFMan
 {
@@ -28,7 +29,51 @@ namespace SFMan
 			return JToken.Parse(_json)["records"];
 		}
 
-		private string ConvertCsvFileToJsonObject()
+		public string ConvertCsvFileToJsonObject()
+		{
+			//TextFieldParser parser = new TextFieldParser(new StringReader(file));
+
+			// You can also read from a file
+			TextFieldParser parser = new TextFieldParser(_fileName);
+
+			parser.HasFieldsEnclosedInQuotes = true;
+			parser.SetDelimiters(",");
+
+			string[] fields;
+			var csv = new List<string[]>();
+
+			while (!parser.EndOfData)
+			{
+				fields = parser.ReadFields();
+				csv.Add(fields);
+				//foreach (string field in fields)
+				//{
+				//	Console.WriteLine(field);
+				//}
+			}
+
+			parser.Close();
+
+			var properties = csv[0];
+
+			var listObjResult = new List<Dictionary<string, string>>();
+
+			for (int i = 1; i < csv.Count; i++)
+			{
+				var objResult = new Dictionary<string, string>();
+
+				for (int j = 0; j < properties.Length; j++)
+				{
+					objResult.Add(properties[j].Replace(".", "--"), csv[i][j]);
+				}
+
+				listObjResult.Add(objResult);
+			}
+
+			return String.Format("{{\"records\" : {0} }}", JsonConvert.SerializeObject(listObjResult, Formatting.Indented));
+		}
+
+		private string old_ConvertCsvFileToJsonObject()
 		{
 			var csv = new List<string[]>();
 			var lines = File.ReadAllLines(_fileName);
