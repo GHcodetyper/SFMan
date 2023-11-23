@@ -12,7 +12,7 @@ namespace SFMan
 {
 	class Program
 	{
-		static string _token = "00DEm000000iVkr!AQEAQKV2a56FHSJgSLfxosNrA42gJE.79lKHqPg2.wqVX.8bsb2SABVVlGtswIdk6WSLm2PdSoMg9YdnMmce9crIXsdV4Hw9";
+		static string _token = "00DEm000000iVkr!AQEAQEGNqFv3lpzLati3GzqipMZcly6p1KBiSIIGGHcU7jySf49veCp29sAhu71s0T1nT3uBcMyLt0KOXhfdyb9O6Sv4xYtV";
 		static string hostUrl = "https://hostway2--datadev.sandbox.my.salesforce.com/services/data/v59.0/";
 		static void Main(string[] args)
 		{
@@ -86,9 +86,21 @@ namespace SFMan
 					// Handle the case when on CSV side there is the Account but on SF side there is not any
 					string accPhone = csvAccounts.GetAccountProperty(csvAccountId, "Phone");
 					//TODO: insert the account using the SObject API call
-					sfa.CreateAccount(sfAccStruct.Account);
+					sfa.CreateAccount(csvAccount);
 					continue;
 				}
+
+				dynamic sfAcc = new System.Dynamic.ExpandoObject();
+				//Name,AccountNumber,Phone,Type,Brand__c,Status__c,OwnerId,RecordTypeId,customExtIdField__c
+				sfAcc.customExtIdField__c = csvAccount.customExtIdField__c + "_123";
+				sfAcc.Name = csvAccount.Name + "_123";
+				sfAcc.AccountNumber = csvAccount.AccountNumber + "_123";
+				sfAcc.Phone = csvAccount.Phone + "_123";
+				sfAcc.Type = "Channel";
+				sfAcc.Brand__c = "Hostway";
+
+				sfa.CreateAccount(sfAcc);
+
 
 				dynamic sfAccount = sfAccStruct.Account;
 				sfa.UpdateAccount(sfAccount);

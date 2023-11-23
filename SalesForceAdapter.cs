@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +16,8 @@ namespace SFMan
 		string _hostUrl;
 		string _apiToken;
 		readonly string _queryService = "/query/?q=";
-		readonly string _sObjectService = @"sobjects/{0}/{1}";
+		readonly string _sObjectService = @"sobjects/{0}";
+		readonly string _sObjectServiceWithId = @"sobjects/{0}/{1}";
 
 		public SFAdapter(string hostUrl, string apiToken)
 		{
@@ -116,7 +118,7 @@ namespace SFMan
 		}
 		public dynamic GetContact(string Id)
 		{
-			string sObjectStr = String.Format(_sObjectService, "Contact", Id);
+			string sObjectStr = String.Format(_sObjectServiceWithId, "Contact", Id);
 			HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, _hostUrl + sObjectStr);
 
 			request.Headers.Add("Authorization", "Bearer " + _apiToken);
@@ -141,6 +143,21 @@ namespace SFMan
 		}
 		public void CreateAccount(dynamic account)
 		{
+			var str = JsonConvert.SerializeObject(account, Formatting.Indented);
+			Console.WriteLine(str);
+
+			string sObjectStr = String.Format(_sObjectService, "Account");
+			HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, _hostUrl + sObjectStr);
+
+			request.Headers.Add("Authorization", "Bearer " + _apiToken);
+			request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+			request.Content = new StringContent(str, Encoding.UTF8, "application/json");
+
+			HttpResponseMessage message = _httpclient.SendAsync(request).Result;
+			string response = message.Content.ReadAsStringAsync().Result;
+
+			dynamic respObj = JObject.Parse(response);
+
 			return;
 		}
 	}
