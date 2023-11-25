@@ -12,7 +12,7 @@ namespace SFMan
 {
 	class Program
 	{
-		static string _token = "00DEm000000iVkr!AQEAQEGNqFv3lpzLati3GzqipMZcly6p1KBiSIIGGHcU7jySf49veCp29sAhu71s0T1nT3uBcMyLt0KOXhfdyb9O6Sv4xYtV";
+		static string _token = "00DEm000000iVkr!AQEAQAZws3z3_jvUtFXiXz2knYPEp0KpwMfXwGtunFEvyZkUC2f6E6Sj7h_VGOeClnJItabuRKiZbhz3IeNJVrtYlKvnDpPp";
 		static string hostUrl = "https://hostway2--datadev.sandbox.my.salesforce.com/services/data/v59.0/";
 		static void Main(string[] args)
 		{
@@ -90,22 +90,24 @@ namespace SFMan
 					continue;
 				}
 
-				dynamic sfAcc = new System.Dynamic.ExpandoObject();
-				//Name,AccountNumber,Phone,Type,Brand__c,Status__c,OwnerId,RecordTypeId,customExtIdField__c
-				sfAcc.customExtIdField__c = csvAccount.customExtIdField__c + "_123";
-				sfAcc.Name = csvAccount.Name + "_123";
-				sfAcc.AccountNumber = csvAccount.AccountNumber + "_123";
-				sfAcc.Phone = csvAccount.Phone + "_123";
-				sfAcc.Type = "Channel";
-				sfAcc.Brand__c = "Hostway";
-
-				sfa.CreateAccount(sfAcc);
-
+				//dynamic sfAcc = new System.Dynamic.ExpandoObject();
+				////Name,AccountNumber,Phone,Type,Brand__c,Status__c,OwnerId,RecordTypeId,customExtIdField__c
+				//sfAcc.Name = csvAccount.Name + "_123";
+				//sfAcc.AccountNumber = csvAccount.AccountNumber + "_123";
+				//sfAcc.Phone = csvAccount.Phone + "_123123";
+				//sfAcc.Type = csvAccount.Type; // "Channel";
+				//sfAcc.Brand__c = csvAccount.Brand__c;  // "Hostway";
+				//sfAcc.Status__c = csvAccount.Status__c;
+				//sfAcc.RecordTypeId = csvAccount.RecordTypeId; // "0126g000000iYxgAAE";
+				//sfAcc.customExtIdField__c = csvAccount.customExtIdField__c + "_123";
+				//sfa.CreateAccount(sfAcc);
 
 				dynamic sfAccount = sfAccStruct.Account;
-				sfa.UpdateAccount(sfAccount);
-
 				Console.WriteLine($"SF Account: {{{sfAccount.customExtIdField__c}, {sfAccount.Id}, {sfAccount.Name}, {sfAccount.Type}}}");
+
+				dynamic sfAccountUpdateDto = new System.Dynamic.ExpandoObject();
+				sfAccountUpdateDto.Phone = sfAccount.Phone + "333222111";
+				sfa.UpdateAccount(sfAccountUpdateDto, (string)sfAccount.Id);
 
 				dynamic sfContactArray = sfAccStruct.Contacts;
 				Console.WriteLine(sfContactArray);

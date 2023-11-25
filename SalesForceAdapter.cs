@@ -137,11 +137,24 @@ namespace SFMan
 			return;
 		}
 
-		public void UpdateAccount(dynamic account)
+		public bool UpdateAccount(dynamic account, string id)
 		{
-			return;
+			var str = JsonConvert.SerializeObject(account, Formatting.Indented);
+			Console.WriteLine(str);
+
+			string sObjectStr = String.Format(_sObjectServiceWithId, "Account", id);
+			HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Patch, _hostUrl + sObjectStr);
+
+			request.Headers.Add("Authorization", "Bearer " + _apiToken);
+			request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+			request.Content = new StringContent(str, Encoding.UTF8, "application/json");
+
+			HttpResponseMessage message = _httpclient.SendAsync(request).Result;
+			string response = message.Content.ReadAsStringAsync().Result;
+
+			return message.IsSuccessStatusCode;
 		}
-		public void CreateAccount(dynamic account)
+		public string CreateAccount(dynamic account)
 		{
 			var str = JsonConvert.SerializeObject(account, Formatting.Indented);
 			Console.WriteLine(str);
@@ -158,7 +171,7 @@ namespace SFMan
 
 			dynamic respObj = JObject.Parse(response);
 
-			return;
+			return respObj.Id;
 		}
 	}
 }
