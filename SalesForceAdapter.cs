@@ -59,11 +59,12 @@ namespace SFMan
 
 			var a = 5;
 		}
-
+		//Name,AccountNumber,Phone,Type,Brand__c,Status__c,OwnerId,RecordTypeId,customExtIdField__c
+		//"Account.customExtIdField__c","Department","Email","Phone","MobilePhone","FirstName","MiddleName","LastName","MailingStreet","MailingCity","MailingState","MailingCountry","MailingPostalCode","RecordTypeId","Type__c","Contact_Status__c",customExtIdField__c
 		public dynamic GetAccountAndContactsByExtId(string extId)
 		{
 			string query = String.Format(
-				" select Id, Name, CustomExtIdField__c, Type, Phone " +
+				" select Id, Name, CustomExtIdField__c, Type, Phone, " +
 				" , (select Id, Name, Email, CustomExtIdField__c, Department, Phone, MobilePhone, Secondary_Email__c " +
 				" from Contacts) " +
 				" from account where CustomExtIdField__c = '{0}'",
@@ -132,15 +133,49 @@ namespace SFMan
 			return respObj;
 		}
 
-		public void UpdateContact(dynamic contact)
+		public string CreateContact(dynamic contact)
 		{
-			return;
+			var str = JsonConvert.SerializeObject(contact, Formatting.Indented);
+			Console.WriteLine(str);
+
+			string sObjectStr = String.Format(_sObjectService, "Contact");
+			HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, _hostUrl + sObjectStr);
+
+			request.Headers.Add("Authorization", "Bearer " + _apiToken);
+			request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+			request.Content = new StringContent(str, Encoding.UTF8, "application/json");
+
+			HttpResponseMessage message = _httpclient.SendAsync(request).Result;
+			string response = message.Content.ReadAsStringAsync().Result;
+
+			dynamic respObj = JObject.Parse(response);
+
+			return respObj.Id;
+		}
+
+
+		public bool UpdateContact(dynamic contact, string id)
+		{
+			var str = JsonConvert.SerializeObject(contact, Formatting.Indented);
+			//Console.WriteLine(str);
+
+			string sObjectStr = String.Format(_sObjectServiceWithId, "Account", id);
+			HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Patch, _hostUrl + sObjectStr);
+
+			request.Headers.Add("Authorization", "Bearer " + _apiToken);
+			request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+			request.Content = new StringContent(str, Encoding.UTF8, "application/json");
+
+			HttpResponseMessage message = _httpclient.SendAsync(request).Result;
+			string response = message.Content.ReadAsStringAsync().Result;
+
+			return message.IsSuccessStatusCode;
 		}
 
 		public bool UpdateAccount(dynamic account, string id)
 		{
 			var str = JsonConvert.SerializeObject(account, Formatting.Indented);
-			Console.WriteLine(str);
+			//Console.WriteLine(str);
 
 			string sObjectStr = String.Format(_sObjectServiceWithId, "Account", id);
 			HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Patch, _hostUrl + sObjectStr);

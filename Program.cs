@@ -106,7 +106,7 @@ namespace SFMan
 				Console.WriteLine($"SF Account: {{{sfAccount.customExtIdField__c}, {sfAccount.Id}, {sfAccount.Name}, {sfAccount.Type}}}");
 
 				dynamic sfAccountUpdateDto = new System.Dynamic.ExpandoObject();
-				sfAccountUpdateDto.Phone = sfAccount.Phone + "333222111";
+				sfAccountUpdateDto.Phone = csvAccount.Phone;
 				sfa.UpdateAccount(sfAccountUpdateDto, (string)sfAccount.Id);
 
 				dynamic sfContactArray = sfAccStruct.Contacts;
