@@ -159,7 +159,7 @@ namespace SFMan
 			var str = JsonConvert.SerializeObject(contact, Formatting.Indented);
 			//Console.WriteLine(str);
 
-			string sObjectStr = String.Format(_sObjectServiceWithId, "Account", id);
+			string sObjectStr = String.Format(_sObjectServiceWithId, "Contact", id);
 			HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Patch, _hostUrl + sObjectStr);
 
 			request.Headers.Add("Authorization", "Bearer " + _apiToken);

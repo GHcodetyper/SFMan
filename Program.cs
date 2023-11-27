@@ -80,50 +80,86 @@ namespace SFMan
 				if (csvAccountId != "acct8567906")
 					continue;
 
+				dynamic csvContactArray = csvContacts.GetContactsByAccountId(csvAccountId);
+
+
 				dynamic sfAccStruct = sfa.GetAccountAndContactsByExtId(csvAccountId);
 				if (sfAccStruct == null)
 				{
 					// Handle the case when on CSV side there is the Account but on SF side there is not any
-					string accPhone = csvAccounts.GetAccountProperty(csvAccountId, "Phone");
-					//TODO: insert the account using the SObject API call
-					sfa.CreateAccount(csvAccount);
+					dynamic sfAcc = new System.Dynamic.ExpandoObject();
+					//Name,AccountNumber,Phone,Type,Brand__c,Status__c,OwnerId,RecordTypeId,customExtIdField__c
+					sfAcc.Name = csvAccount.Name;
+					sfAcc.AccountNumber = csvAccount.AccountNumber;
+					sfAcc.Phone = csvAccount.Phone;
+					sfAcc.Type = csvAccount.Type;
+					sfAcc.Brand__c = csvAccount.Brand__c;
+					sfAcc.Status__c = csvAccount.Status__c;
+					sfAcc.RecordTypeId = csvAccount.RecordTypeId;
+					sfAcc.customExtIdField__c = csvAccount.customExtIdField__c + "_123";
+					var sfId = sfa.CreateAccount(sfAcc);
+					
+					foreach (dynamic csvContact in csvContactArray)
+					{
+						dynamic sfCon = new System.Dynamic.ExpandoObject();
+						sfCon.Name = csvContact.Name;
+						sfa.CreateContact(sfCon);
+
+						//TODO: Create ACR as well
+					}
+
 					continue;
 				}
 
-				//dynamic sfAcc = new System.Dynamic.ExpandoObject();
-				////Name,AccountNumber,Phone,Type,Brand__c,Status__c,OwnerId,RecordTypeId,customExtIdField__c
-				//sfAcc.Name = csvAccount.Name + "_123";
-				//sfAcc.AccountNumber = csvAccount.AccountNumber + "_123";
-				//sfAcc.Phone = csvAccount.Phone + "_123123";
-				//sfAcc.Type = csvAccount.Type; // "Channel";
-				//sfAcc.Brand__c = csvAccount.Brand__c;  // "Hostway";
-				//sfAcc.Status__c = csvAccount.Status__c;
-				//sfAcc.RecordTypeId = csvAccount.RecordTypeId; // "0126g000000iYxgAAE";
-				//sfAcc.customExtIdField__c = csvAccount.customExtIdField__c + "_123";
-				//sfa.CreateAccount(sfAcc);
+
 
 				dynamic sfAccount = sfAccStruct.Account;
 				Console.WriteLine($"SF Account: {{{sfAccount.customExtIdField__c}, {sfAccount.Id}, {sfAccount.Name}, {sfAccount.Type}}}");
 
+				/*
 				dynamic sfAccountUpdateDto = new System.Dynamic.ExpandoObject();
 				sfAccountUpdateDto.Phone = csvAccount.Phone;
 				sfa.UpdateAccount(sfAccountUpdateDto, (string)sfAccount.Id);
+				*/
 
 				dynamic sfContactArray = sfAccStruct.Contacts;
 				Console.WriteLine(sfContactArray);
 
-				dynamic csvContactArray = csvContacts.GetContactsByAccountId(csvAccountId);
+				foreach (dynamic csvContact in csvContactArray)
+				{
+					foreach (dynamic sfContact in sfContactArray)
+					{
 
+						if ((int)sfContact.customExtIdField__c == (int)csvContact.customExtIdField__c)
+						{
+							csvContact.SyncOperation = "upd";
 
-				List<dynamic> sfContactsToDelete = new List<dynamic>();
-				List<dynamic> sfContactsToUpdate = new List<dynamic>();
+							//dynamic sfContactUpdateDto = new System.Dynamic.ExpandoObject();
+							//sfContactUpdateDto.Phone = csvAccount.Phone;
+							//sfa.UpdateContact(sfContactUpdateDto, (string)sfContact.Id);
+						}
+					}
+				}
+
+				foreach (dynamic csvContact in csvContactArray)
+				{
+					if (csvContact.SyncOperation == null)
+					{
+						csvContact.SyncOperation = "add";
+
+						dynamic sfContact = new System.Dynamic.ExpandoObject();
+						sfContact.Phone = csvAccount.Phone;
+						var sfId = sfa.CreateContact(sfContact);
+
+						//TODO: Create ACR as well
+					}
+				}
 
 				foreach (dynamic sfContact in sfContactArray)
 				{
 					if (sfContact.customExtIdField__c == null)
 					{
 						sfContact.SyncOperation = "del-id-null";
-						sfContactsToDelete.Add(sfContact);
 						continue;
 					}
 
@@ -132,7 +168,6 @@ namespace SFMan
 						if ((int)sfContact.customExtIdField__c == (int)csvContact.customExtIdField__c)
 						{
 							sfContact.SyncOperation = "upd";
-							sfContactsToUpdate.Add(sfContact);
 						}
 					}
 				}
@@ -149,6 +184,9 @@ namespace SFMan
 							sfa.DeleteContact(sfContact);
 							break;
 						case "upd":
+							dynamic sfContactUpdateDto = new System.Dynamic.ExpandoObject();
+							sfContactUpdateDto.Phone = csvAccount.Phone;
+							sfa.UpdateContact(sfContactUpdateDto, (string)sfContact.Id);
 							break;
 						default:
 							break;
