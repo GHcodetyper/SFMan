@@ -12,7 +12,7 @@ namespace SFMan
 {
 	class Program
 	{
-		static string _token = "00DEm000000iVkr!AQEAQAZws3z3_jvUtFXiXz2knYPEp0KpwMfXwGtunFEvyZkUC2f6E6Sj7h_VGOeClnJItabuRKiZbhz3IeNJVrtYlKvnDpPp";
+		static string token = "00DEm000000iVkr!AQEAQC42yaylI65KtrbnL_vzCKY1yUJ44HW9yMYe76.wKBvuhUiXrv6a0rgOBxtiBckwEvPVUOQTZZJFjWh0sD8UQuFPSrmk";
 		static string hostUrl = "https://hostway2--datadev.sandbox.my.salesforce.com/services/data/v59.0/";
 		static void Main(string[] args)
 		{
@@ -33,7 +33,7 @@ namespace SFMan
 			//	Console.WriteLine(item);
 			//}
 
-			var csvContacts = new CSVContacts(@"c:\temp\SF\Contact 1.csv");
+			var csvContacts = new CSVContacts(@"c:\temp\SF\Contact 2.csv");
 			//foreach (var ac in csvContacts.csvHelper.GetCSVEntities())
 			//{
 			//	Console.WriteLine(ac.GetEntityProperty("MailingStreet"));
@@ -61,7 +61,7 @@ namespace SFMan
 
 
 
-			SFAdapter sfa = new SFAdapter(hostUrl, _token);
+			SFAdapter sfa = new SFAdapter(hostUrl, token);
 
 
 
@@ -87,27 +87,15 @@ namespace SFMan
 				if (sfAccStruct == null)
 				{
 					// Handle the case when on CSV side there is the Account but on SF side there is not any
-					dynamic sfAcc = new System.Dynamic.ExpandoObject();
-					//Name,AccountNumber,Phone,Type,Brand__c,Status__c,OwnerId,RecordTypeId,customExtIdField__c
-					sfAcc.Name = csvAccount.Name;
-					sfAcc.AccountNumber = csvAccount.AccountNumber;
-					sfAcc.Phone = csvAccount.Phone;
-					sfAcc.Type = csvAccount.Type;
-					sfAcc.Brand__c = csvAccount.Brand__c;
-					sfAcc.Status__c = csvAccount.Status__c;
-					sfAcc.RecordTypeId = csvAccount.RecordTypeId;
-					sfAcc.customExtIdField__c = csvAccount.customExtIdField__c + "_123";
-					var sfId = sfa.CreateAccount(sfAcc);
+					dynamic newSFAcc = sfa.GetNewAccountDto(csvAccount);
+					var newSFAccountId = sfa.CreateAccount(newSFAcc);
 					
 					foreach (dynamic csvContact in csvContactArray)
 					{
-						dynamic sfCon = new System.Dynamic.ExpandoObject();
-						sfCon.Name = csvContact.Name;
-						sfa.CreateContact(sfCon);
-
-						//TODO: Create ACR as well
+						dynamic newContactDto = sfa.GetNewContactDto(csvContact, newSFAccountId);
+						var newSFContactId = sfa.CreateContact(newContactDto);
+						//no need to create a new ACR
 					}
-
 					continue;
 				}
 
@@ -129,15 +117,11 @@ namespace SFMan
 				{
 					foreach (dynamic sfContact in sfContactArray)
 					{
-
+						if (sfContact.customExtIdField__c == null)
+							continue;
+						
 						if ((int)sfContact.customExtIdField__c == (int)csvContact.customExtIdField__c)
-						{
 							csvContact.SyncOperation = "upd";
-
-							//dynamic sfContactUpdateDto = new System.Dynamic.ExpandoObject();
-							//sfContactUpdateDto.Phone = csvAccount.Phone;
-							//sfa.UpdateContact(sfContactUpdateDto, (string)sfContact.Id);
-						}
 					}
 				}
 
@@ -147,11 +131,10 @@ namespace SFMan
 					{
 						csvContact.SyncOperation = "add";
 
-						dynamic sfContact = new System.Dynamic.ExpandoObject();
-						sfContact.Phone = csvAccount.Phone;
-						var sfId = sfa.CreateContact(sfContact);
 
-						//TODO: Create ACR as well
+						dynamic newContactDto = sfa.GetNewContactDto(csvContact, (string)sfAccount.Id);
+						var newSFContactId = sfa.CreateContact(newContactDto);
+						//no need to create a new ACR
 					}
 				}
 
@@ -168,6 +151,8 @@ namespace SFMan
 						if ((int)sfContact.customExtIdField__c == (int)csvContact.customExtIdField__c)
 						{
 							sfContact.SyncOperation = "upd";
+							dynamic sfContactUpdateDto = sfa.GetContactUpdateDto(csvContact);
+							sfa.UpdateContact(sfContactUpdateDto, (string)sfContact.Id);
 						}
 					}
 				}
@@ -182,11 +167,6 @@ namespace SFMan
 						case "del-id-null":
 						case "del-id-not-found":
 							sfa.DeleteContact(sfContact);
-							break;
-						case "upd":
-							dynamic sfContactUpdateDto = new System.Dynamic.ExpandoObject();
-							sfContactUpdateDto.Phone = csvAccount.Phone;
-							sfa.UpdateContact(sfContactUpdateDto, (string)sfContact.Id);
 							break;
 						default:
 							break;
@@ -300,7 +280,7 @@ namespace SFMan
 			//Console.WriteLine(accStruct.Account.Id);
 			//Console.WriteLine(accStruct.Account.customExtIdField__c);
 
-			var d = sfa.GetContact("003Em0000075h57IAA");
+			//var d = sfa.GetContact("003Em0000075h57IAA");
 
 			var a = 5;
 		}

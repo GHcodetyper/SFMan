@@ -64,7 +64,7 @@ namespace SFMan
 		public dynamic GetAccountAndContactsByExtId(string extId)
 		{
 			string query = String.Format(
-				" select Id, Name, CustomExtIdField__c, Type, Phone, " +
+				" select Id, Name, CustomExtIdField__c, Type, Phone " +
 				" , (select Id, Name, Email, CustomExtIdField__c, Department, Phone, MobilePhone, Secondary_Email__c " +
 				" from Contacts) " +
 				" from account where CustomExtIdField__c = '{0}'",
@@ -150,7 +150,7 @@ namespace SFMan
 
 			dynamic respObj = JObject.Parse(response);
 
-			return respObj.Id;
+			return respObj.id;
 		}
 
 
@@ -207,6 +207,89 @@ namespace SFMan
 			dynamic respObj = JObject.Parse(response);
 
 			return respObj.Id;
+		}
+
+		public dynamic GetNewAccountDto(dynamic csvAccount)
+		{
+			dynamic newSFAcc = new System.Dynamic.ExpandoObject();
+
+			newSFAcc.Name = csvAccount.Name;
+			newSFAcc.AccountNumber = csvAccount.AccountNumber;
+			newSFAcc.Phone = csvAccount.Phone;
+			newSFAcc.Type = csvAccount.Type;
+			newSFAcc.Brand__c = csvAccount.Brand__c;
+			newSFAcc.Status__c = csvAccount.Status__c;
+			newSFAcc.RecordTypeId = csvAccount.RecordTypeId;
+			newSFAcc.customExtIdField__c = csvAccount.customExtIdField__c;
+
+			return newSFAcc;
+		}
+
+		public dynamic GetAccountUpdateDto(dynamic csvAccount)
+		{
+			dynamic updSFAcc = new System.Dynamic.ExpandoObject();
+
+			updSFAcc.Name = csvAccount.Name;
+			updSFAcc.AccountNumber = csvAccount.AccountNumber;
+			updSFAcc.Phone = csvAccount.Phone;
+			updSFAcc.Type = csvAccount.Type;
+			updSFAcc.Brand__c = csvAccount.Brand__c;
+			updSFAcc.Status__c = csvAccount.Status__c;
+			updSFAcc.RecordTypeId = csvAccount.RecordTypeId;
+			updSFAcc.customExtIdField__c = csvAccount.customExtIdField__c;
+
+			return updSFAcc;
+		}
+
+		public dynamic GetNewContactDto(dynamic csvContact, string sfAccountId)
+		{
+			dynamic newSFCon = new System.Dynamic.ExpandoObject();
+
+			newSFCon.AccountId = sfAccountId;
+			newSFCon.Department = csvContact.Department;
+			newSFCon.Email = csvContact.Email;
+			newSFCon.Secondary_Email__c = csvContact.Secondary_Email__c;
+			newSFCon.MobilePhone = csvContact.MobilePhone;
+			newSFCon.FirstName = csvContact.FirstName;
+			newSFCon.MiddleName = csvContact.MiddleName;
+			newSFCon.LastName = csvContact.LastName;
+			newSFCon.MailingStreet = csvContact.MailingStreet;
+			newSFCon.MailingCity = csvContact.MailingCity;
+			newSFCon.MailingState = csvContact.MailingState;
+			newSFCon.MailingCountry = csvContact.MailingCountry;
+			newSFCon.MailingPostalCode = csvContact.MailingPostalCode;
+			newSFCon.Type__c = csvContact.Type__c;
+			newSFCon.Contact_Status__c = csvContact.Contact_Status__c;
+			newSFCon.RecordTypeId = csvContact.RecordTypeId;
+			newSFCon.customExtIdField__c = csvContact.customExtIdField__c;
+			newSFCon.Phone = csvContact.Phone;
+
+			return newSFCon;
+		}
+
+		public dynamic GetContactUpdateDto(dynamic csvContact)
+		{
+			dynamic updSFCon = new System.Dynamic.ExpandoObject();
+
+			updSFCon.Department = csvContact.Department;
+			updSFCon.Email = csvContact.Email;
+			updSFCon.Secondary_Email__c = csvContact.Secondary_Email__c;
+			updSFCon.MobilePhone = csvContact.MobilePhone;
+			updSFCon.FirstName = csvContact.FirstName;
+			updSFCon.MiddleName = csvContact.MiddleName;
+			updSFCon.LastName = csvContact.LastName;
+			updSFCon.MailingStreet = csvContact.MailingStreet;
+			updSFCon.MailingCity = csvContact.MailingCity;
+			updSFCon.MailingState = csvContact.MailingState;
+			updSFCon.MailingCountry = csvContact.MailingCountry;
+			updSFCon.MailingPostalCode = csvContact.MailingPostalCode;
+			updSFCon.Type__c = csvContact.Type__c;
+			updSFCon.Contact_Status__c = csvContact.Contact_Status__c;
+			updSFCon.RecordTypeId = csvContact.RecordTypeId;
+			updSFCon.customExtIdField__c = csvContact.customExtIdField__c;
+			updSFCon.Phone = csvContact.Phone;
+
+			return updSFCon;
 		}
 	}
 }
