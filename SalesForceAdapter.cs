@@ -47,10 +47,7 @@ namespace SFMan
 			if (recs.Count == 0)
 				return null;
 			
-			dynamic result = new System.Dynamic.ExpandoObject();
-			result.Contacts = respObj.records[0].Contacts.records;
-			result.Account = respObj.records[0];
-
+			dynamic result = recs;
 			return result;
 
 
