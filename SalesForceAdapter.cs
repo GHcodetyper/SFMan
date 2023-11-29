@@ -23,12 +23,13 @@ namespace SFMan
 		{
 			_hostUrl = hostUrl;
 			_apiToken = apiToken;
-			_httpclient = new HttpClient();
 		}
-		public void GetContactRelationsByAccount(string extAccountId)
+		public dynamic GetContactRelationsByAccount(string accountId)
 		{
-			string query = $"select id, name, customExtIdField__c, (select id, name, customExtIdField__c from Contacts) from account where customExtIdField__c = '{extAccountId}'";
-			//HttpContent content = new StringContent(jobconfig, Encoding.UTF8, "application/json");
+			_httpclient = new HttpClient();
+
+			string query = $"select AccountId, ContactId, Relationship_Strength__c from AccountContactRelation where AccountId= '{accountId}'";
+			
 			HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, _hostUrl + _queryService + query);
 
 			request.Headers.Add("Authorization", "Bearer " + _apiToken);
@@ -39,30 +40,27 @@ namespace SFMan
 			HttpResponseMessage message = _httpclient.SendAsync(request).Result;
 			string response = message.Content.ReadAsStringAsync().Result;
 
-			JObject re = JObject.Parse(response);
-
-			var Name = re.SelectToken($"$.records[0].Name");
-
-			var contacts = re.SelectToken($"$.records[0].Contacts.records");
-
-
-
-
+			dynamic respObj = JObject.Parse(response);
 			//Console.WriteLine(re.totalSize);
 
-			//var recs = re.records;
+			var recs = respObj.records;
+			if (recs.Count == 0)
+				return null;
+			
+			dynamic result = new System.Dynamic.ExpandoObject();
+			result.Contacts = respObj.records[0].Contacts.records;
+			result.Account = respObj.records[0];
 
-			//foreach (var rec in recs)
-			//{
-			//	Console.WriteLine(rec.Id);
-			//}
+			return result;
 
-			var a = 5;
+
 		}
 		//Name,AccountNumber,Phone,Type,Brand__c,Status__c,OwnerId,RecordTypeId,customExtIdField__c
 		//"Account.customExtIdField__c","Department","Email","Phone","MobilePhone","FirstName","MiddleName","LastName","MailingStreet","MailingCity","MailingState","MailingCountry","MailingPostalCode","RecordTypeId","Type__c","Contact_Status__c",customExtIdField__c
 		public dynamic GetAccountAndContactsByExtId(string extId)
 		{
+			_httpclient = new HttpClient();
+
 			string query = String.Format(
 				" select Id, Name, CustomExtIdField__c, Type, Phone " +
 				" , (select Id, Name, Email, CustomExtIdField__c, Department, Phone, MobilePhone, Secondary_Email__c " +
@@ -104,6 +102,8 @@ namespace SFMan
 
 		public bool DeleteContact(dynamic contact)
 		{
+			_httpclient = new HttpClient();
+
 			string sObjectStr = String.Format(_sObjectService, "Contact", (string)contact.Id);
 			HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Delete, _hostUrl + sObjectStr);
 
@@ -119,6 +119,8 @@ namespace SFMan
 		}
 		public dynamic GetContact(string Id)
 		{
+			_httpclient = new HttpClient();
+
 			string sObjectStr = String.Format(_sObjectServiceWithId, "Contact", Id);
 			HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, _hostUrl + sObjectStr);
 
@@ -135,6 +137,8 @@ namespace SFMan
 
 		public string CreateContact(dynamic contact)
 		{
+			_httpclient = new HttpClient();
+
 			var str = JsonConvert.SerializeObject(contact, Formatting.Indented);
 			Console.WriteLine(str);
 
@@ -156,6 +160,8 @@ namespace SFMan
 
 		public bool UpdateContact(dynamic contact, string id)
 		{
+			_httpclient = new HttpClient();
+
 			var str = JsonConvert.SerializeObject(contact, Formatting.Indented);
 			//Console.WriteLine(str);
 
@@ -174,6 +180,8 @@ namespace SFMan
 
 		public bool UpdateAccount(dynamic account, string id)
 		{
+			_httpclient = new HttpClient();
+
 			var str = JsonConvert.SerializeObject(account, Formatting.Indented);
 			//Console.WriteLine(str);
 
@@ -191,6 +199,8 @@ namespace SFMan
 		}
 		public string CreateAccount(dynamic account)
 		{
+			_httpclient = new HttpClient();
+
 			var str = JsonConvert.SerializeObject(account, Formatting.Indented);
 			Console.WriteLine(str);
 
@@ -206,7 +216,7 @@ namespace SFMan
 
 			dynamic respObj = JObject.Parse(response);
 
-			return respObj.Id;
+			return respObj.id;
 		}
 
 		public dynamic GetNewAccountDto(dynamic csvAccount)
