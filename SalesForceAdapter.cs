@@ -101,13 +101,11 @@ namespace SFMan
 		{
 			_httpclient = new HttpClient();
 
-			string sObjectStr = String.Format(_sObjectService, "Contact", (string)contact.Id);
+			string sObjectStr = String.Format(_sObjectServiceWithId, "Contact", (string)contact.Id);
 			HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Delete, _hostUrl + sObjectStr);
 
 			request.Headers.Add("Authorization", "Bearer " + _apiToken);
 			request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-			request.Method = HttpMethod.Options;
 
 			HttpResponseMessage message = _httpclient.SendAsync(request).Result;
 			//string response = message.Content.ReadAsStringAsync().Result;

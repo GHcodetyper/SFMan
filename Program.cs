@@ -78,8 +78,8 @@ namespace SFMan
 
 
 				//if (csvAccountId != "acct9202994")
-				if (csvAccountId != "acct8567906")
-					continue;
+				// if (csvAccountId != "acct8567906")
+				// 	continue;
 
 				dynamic csvContactArray = csvContacts.GetContactsByAccountId(csvAccountId);
 
@@ -105,11 +105,9 @@ namespace SFMan
 				dynamic sfAccount = sfAccStruct.Account;
 				Console.WriteLine($"SF Account: {{{sfAccount.customExtIdField__c}, {sfAccount.Id}, {sfAccount.Name}, {sfAccount.Type}}}");
 
-				/*
-				dynamic sfAccountUpdateDto = new System.Dynamic.ExpandoObject();
-				sfAccountUpdateDto.Phone = csvAccount.Phone;
+				// this update block is the subject TBD according to the business logic
+				dynamic sfAccountUpdateDto = sfa.GetAccountUpdateDto(csvAccount);
 				sfa.UpdateAccount(sfAccountUpdateDto, (string)sfAccount.Id);
-				*/
 
 				//dynamic sfACRs = sfa.GetContactRelationsByAccount((string)sfAccount.Id);
 
